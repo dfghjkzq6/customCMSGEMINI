@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: posts
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required) - The title of the post.
+    //   - slug: string (required) - The URL slug for the post.
+    //   - content: string (required) - The main content of the post.
+    //   - status: string (required, enum: ['draft', 'published']) - Publication status.
+    //   - createdAt: timestamp (required) - Creation time.
+    //   - updatedAt: timestamp (required) - Last update time.
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function hasRequiredFields(data) {
+      return data.keys().hasAll(['title', 'slug', 'content', 'status', 'createdAt', 'updatedAt']);
+    }
+
+    function hasOnlyAllowedFields(data) {
+      return data.keys().hasOnly(['title', 'slug', 'content', 'status', 'createdAt', 'updatedAt']);
+    }
+
+    function isValidPost(data) {
+      return hasRequiredFields(data) &&
+             hasOnlyAllowedFields(data) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.slug is string && data.slug.size() > 0 && data.slug.size() < 200 &&
+             data.content is string && data.content.size() < 50000 &&
+             data.status in ['draft', 'published'] &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /posts/{postId} {
+      // User explicitly requested no authentication for this simple local admin tool.
+      // WARNING: This makes the data publicly accessible.
+      allow read: if true;
+      allow create: if isValidPost(request.resource.data);
+      allow update: if isValidPost(request.resource.data);
+      allow delete: if true;
+    }
+
+    match /dataModels/{modelId} {
+      allow read, write: if true;
+    }
+
+    match /apiConnections/{connId} {
+      allow read, write: if true;
+    }
+
+    match /pages/{pageId} {
+      allow read, write: if true;
+    }
+
+    // Allow dynamic collections defined by dataModels
+    match /{collectionName}/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

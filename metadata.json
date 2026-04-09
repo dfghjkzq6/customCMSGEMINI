@@ -1,0 +1,5 @@
+{
+  "name": "Simple Admin CMS",
+  "description": "An advanced Admin CMS with custom data models, block editor, REST APIs, and dynamic custom pages.",
+  "requestFramePermissions": ["keyboard-map"]
+}

@@ -1,0 +1,103 @@
+{
+  "entities": {
+    "Post": {
+      "title": "Post",
+      "description": "A blog post document.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the post."
+        },
+        "slug": {
+          "type": "string",
+          "description": "The URL slug for the post."
+        },
+        "content": {
+          "type": "string",
+          "description": "The main content of the post."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "published"],
+          "description": "The publication status of the post."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the post was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the post was last updated."
+        }
+      },
+      "required": ["title", "slug", "content", "status", "createdAt", "updatedAt"]
+    },
+    "DataModel": {
+      "title": "Data Model",
+      "description": "Definition of a custom data collection.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "collectionName": { "type": "string" },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": { "type": "string" },
+              "label": { "type": "string" },
+              "type": { "type": "string", "enum": ["string", "number", "boolean", "text", "select"] }
+            }
+          }
+        }
+      },
+      "required": ["name", "collectionName", "fields"]
+    },
+    "APIConnection": {
+      "title": "API Connection",
+      "description": "Configuration for an external API.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "baseUrl": { "type": "string" },
+        "authType": { "type": "string", "enum": ["none", "apiKeyHeader", "bearerToken"] },
+        "authValue": { "type": "string" },
+        "headers": { "type": "object" }
+      },
+      "required": ["name", "baseUrl", "authType"]
+    },
+    "Page": {
+      "title": "Custom Page",
+      "description": "Definition of a custom admin page.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "path": { "type": "string" },
+        "type": { "type": "string", "enum": ["list", "form", "api-console", "static"] },
+        "config": { "type": "object" }
+      },
+      "required": ["title", "path", "type", "config"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Collection of blog posts."
+    },
+    "/dataModels/{modelId}": {
+      "schema": "DataModel",
+      "description": "Definitions of custom collections."
+    },
+    "/apiConnections/{connId}": {
+      "schema": "APIConnection",
+      "description": "External API configurations."
+    },
+    "/pages/{pageId}": {
+      "schema": "Page",
+      "description": "Custom admin pages."
+    }
+  }
+}
