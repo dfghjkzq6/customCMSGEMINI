@@ -11,6 +11,7 @@ import { DataModels } from './pages/DataModels';
 import { APIConnections } from './pages/APIConnections';
 import { Pages } from './pages/Pages';
 import { DynamicCRUD } from './pages/DynamicCRUD';
+import { AuditLogs } from './pages/AuditLogs';
 import { APIConsole } from './pages/APIConsole';
 import { StaticPage } from './pages/StaticPage';
 import { APIDocs } from './pages/APIDocs';
@@ -64,6 +65,7 @@ function AdminApp() {
           <Route path="/" element={<Posts />} />
           <Route path="/models" element={<DataModels />} />
           <Route path="/connections" element={<APIConnections />} />
+          <Route path="/audit" element={<AuditLogs />} />
           <Route path="/pages" element={<Pages models={models} connections={connections} />} />
           <Route path="/docs" element={<APIDocs models={models} />} />
 

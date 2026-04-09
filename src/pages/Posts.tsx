@@ -17,6 +17,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { BlockEditor } from '../components/BlockEditor';
 import { PostPreview } from '../components/PostPreview';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { logAction, AuditAction } from '../services/auditService';
 
 interface Post {
   id: string;
@@ -95,10 +96,24 @@ export const Posts = () => {
 
       if (editingPost) {
         await updateDoc(doc(db, 'posts', editingPost.id), payload);
+        await logAction({
+          action: AuditAction.UPDATE_POST,
+          entityType: 'Post',
+          entityId: editingPost.id,
+          details: `Updated post: ${payload.title}`,
+          metadata: { title: payload.title, status: payload.status }
+        });
       } else {
-        await addDoc(collection(db, 'posts'), {
+        const docRef = await addDoc(collection(db, 'posts'), {
           ...payload,
           createdAt: serverTimestamp()
+        });
+        await logAction({
+          action: AuditAction.CREATE_POST,
+          entityType: 'Post',
+          entityId: docRef.id,
+          details: `Created new post: ${payload.title}`,
+          metadata: { title: payload.title, status: payload.status }
         });
       }
       setIsFormOpen(false);
@@ -117,6 +132,12 @@ export const Posts = () => {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'posts', postToDelete));
+      await logAction({
+        action: AuditAction.DELETE_POST,
+        entityType: 'Post',
+        entityId: postToDelete,
+        details: `Deleted post with ID: ${postToDelete}`
+      });
       setIsDeleteModalOpen(false);
       setPostToDelete(null);
     } catch (error) {

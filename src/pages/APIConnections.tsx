@@ -12,6 +12,7 @@ import { Plus, Edit2, Trash2, X, Save, Globe, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { logAction, AuditAction } from '../services/auditService';
 
 interface APIConnection {
   id: string;
@@ -80,8 +81,22 @@ export const APIConnections = () => {
     try {
       if (editingConn) {
         await updateDoc(doc(db, 'apiConnections', editingConn.id), formData as any);
+        await logAction({
+          action: AuditAction.UPDATE_CONNECTION,
+          entityType: 'APIConnection',
+          entityId: editingConn.id,
+          details: `Updated API connection: ${formData.name}`,
+          metadata: { name: formData.name, baseUrl: formData.baseUrl }
+        });
       } else {
-        await addDoc(collection(db, 'apiConnections'), formData as any);
+        const docRef = await addDoc(collection(db, 'apiConnections'), formData as any);
+        await logAction({
+          action: AuditAction.CREATE_CONNECTION,
+          entityType: 'APIConnection',
+          entityId: docRef.id,
+          details: `Created new API connection: ${formData.name}`,
+          metadata: { name: formData.name, baseUrl: formData.baseUrl }
+        });
       }
       setIsFormOpen(false);
     } catch (error) {
@@ -99,6 +114,12 @@ export const APIConnections = () => {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'apiConnections', connToDelete));
+      await logAction({
+        action: AuditAction.DELETE_CONNECTION,
+        entityType: 'APIConnection',
+        entityId: connToDelete,
+        details: `Deleted API connection with ID: ${connToDelete}`
+      });
       setIsDeleteModalOpen(false);
       setConnToDelete(null);
     } catch (error) {

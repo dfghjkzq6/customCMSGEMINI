@@ -13,6 +13,7 @@ import { Plus, Edit2, Trash2, X, Save, Database, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { logAction, AuditAction } from '../services/auditService';
 
 interface Field {
   key: string;
@@ -34,6 +35,7 @@ export const DataModels = () => {
   const [modelToDelete, setModelToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingModel, setEditingModel] = useState<DataModel | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Omit<DataModel, 'id'>>({
     name: '',
     collectionName: '',
@@ -71,6 +73,7 @@ export const DataModels = () => {
         fields: [{ key: '', label: '', type: 'string' }]
       });
     }
+    setValidationError(null);
     setIsFormOpen(true);
   };
 
@@ -94,11 +97,44 @@ export const DataModels = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError(null);
+
+    // Validation
+    const keys = formData.fields.map(f => f.key.trim());
+    const uniqueKeys = new Set(keys);
+    
+    if (uniqueKeys.size !== keys.length) {
+      setValidationError('Field keys must be unique within a model.');
+      return;
+    }
+
+    const identifierRegex = /^[a-zA-Z][a-zA-Z0-9_]*$/;
+    for (const key of keys) {
+      if (!identifierRegex.test(key)) {
+        setValidationError(`Invalid field key: "${key}". Keys must start with a letter and contain only letters, numbers, and underscores.`);
+        return;
+      }
+    }
+
     try {
       if (editingModel) {
         await updateDoc(doc(db, 'dataModels', editingModel.id), formData as any);
+        await logAction({
+          action: AuditAction.UPDATE_MODEL,
+          entityType: 'DataModel',
+          entityId: editingModel.id,
+          details: `Updated data model: ${formData.name}`,
+          metadata: { name: formData.name, collectionName: formData.collectionName }
+        });
       } else {
-        await addDoc(collection(db, 'dataModels'), formData as any);
+        const docRef = await addDoc(collection(db, 'dataModels'), formData as any);
+        await logAction({
+          action: AuditAction.CREATE_MODEL,
+          entityType: 'DataModel',
+          entityId: docRef.id,
+          details: `Created new data model: ${formData.name}`,
+          metadata: { name: formData.name, collectionName: formData.collectionName }
+        });
       }
       setIsFormOpen(false);
     } catch (error) {
@@ -116,6 +152,12 @@ export const DataModels = () => {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'dataModels', modelToDelete));
+      await logAction({
+        action: AuditAction.DELETE_MODEL,
+        entityType: 'DataModel',
+        entityId: modelToDelete,
+        details: `Deleted data model with ID: ${modelToDelete}`
+      });
       setIsDeleteModalOpen(false);
       setModelToDelete(null);
     } catch (error) {
@@ -192,6 +234,12 @@ export const DataModels = () => {
                 <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400"><X size={20} /></button>
               </div>
               <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
+                {validationError && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-xl flex items-start gap-3 text-red-600 dark:text-red-400 text-sm">
+                    <Settings size={18} className="shrink-0 mt-0.5" />
+                    <p>{validationError}</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model Name</label>

@@ -10,7 +10,8 @@ import {
   Menu,
   X,
   Sun,
-  Moon
+  Moon,
+  History
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -51,6 +52,7 @@ export const Layout = ({ children, customPages = [] }: { children: React.ReactNo
     { to: "/", icon: <FileText size={20} />, label: "Posts" },
     { to: "/models", icon: <Database size={20} />, label: "Data Models" },
     { to: "/connections", icon: <Globe size={20} />, label: "API Connections" },
+    { to: "/audit", icon: <History size={20} />, label: "Audit Log" },
     { to: "/pages", icon: <Layers size={20} />, label: "Pages" },
     { to: "/docs", icon: <BookOpen size={20} />, label: "API Docs" },
   ];
@@ -91,7 +93,7 @@ export const Layout = ({ children, customPages = [] }: { children: React.ReactNo
               <p className="px-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Custom Pages</p>
               {customPages.map((page: any) => (
                 <NavItem 
-                  key={page.path} 
+                  key={page.id} 
                   to={`/p${page.path}`} 
                   icon={<Layers size={20} />} 
                   label={page.title}
@@ -148,7 +150,7 @@ export const Layout = ({ children, customPages = [] }: { children: React.ReactNo
             <div className="h-px bg-gray-100 dark:bg-gray-800 my-4" />
             {customPages.map((page: any) => (
               <NavItem 
-                key={page.path} 
+                key={page.id} 
                 to={`/p${page.path}`} 
                 icon={<Layers size={20} />} 
                 label={page.title}

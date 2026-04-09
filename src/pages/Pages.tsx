@@ -12,6 +12,7 @@ import { Plus, Edit2, Trash2, X, Save, Layers, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { logAction, AuditAction } from '../services/auditService';
 
 interface Page {
   id: string;
@@ -76,8 +77,22 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
     try {
       if (editingPage) {
         await updateDoc(doc(db, 'pages', editingPage.id), formData as any);
+        await logAction({
+          action: AuditAction.UPDATE_PAGE,
+          entityType: 'Page',
+          entityId: editingPage.id,
+          details: `Updated page: ${formData.title}`,
+          metadata: { title: formData.title, type: formData.type }
+        });
       } else {
-        await addDoc(collection(db, 'pages'), formData as any);
+        const docRef = await addDoc(collection(db, 'pages'), formData as any);
+        await logAction({
+          action: AuditAction.CREATE_PAGE,
+          entityType: 'Page',
+          entityId: docRef.id,
+          details: `Created new page: ${formData.title}`,
+          metadata: { title: formData.title, type: formData.type }
+        });
       }
       setIsFormOpen(false);
     } catch (error) {
@@ -95,6 +110,12 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'pages', pageToDelete));
+      await logAction({
+        action: AuditAction.DELETE_PAGE,
+        entityType: 'Page',
+        entityId: pageToDelete,
+        details: `Deleted page with ID: ${pageToDelete}`
+      });
       setIsDeleteModalOpen(false);
       setPageToDelete(null);
     } catch (error) {

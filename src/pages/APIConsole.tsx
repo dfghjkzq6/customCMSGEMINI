@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Terminal, Send, Loader2, Plus, Trash2, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { Terminal, Send, Loader2, Plus, Trash2, AlertCircle, Clock, CheckCircle2, Copy, Check, Eraser, FileJson } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { logAction, AuditAction } from '../services/auditService';
 
 interface Header {
   key: string;
@@ -19,6 +20,30 @@ export const APIConsole = ({ connection }: { connection: any }) => {
   const [time, setTime] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const formatRequestBody = () => {
+    try {
+      const parsed = JSON.parse(body);
+      setBody(JSON.stringify(parsed, null, 2));
+    } catch (e) {
+      setError('Cannot format: Invalid JSON in request body');
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (!response) return;
+    navigator.clipboard.writeText(JSON.stringify(response, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const clearConsole = () => {
+    setResponse(null);
+    setStatus(null);
+    setTime(null);
+    setError(null);
+  };
 
   const addHeader = () => {
     setHeaders([...headers, { key: '', value: '' }]);
@@ -75,12 +100,30 @@ export const APIConsole = ({ connection }: { connection: any }) => {
         url: `${connection.baseUrl}${endpoint}`,
         data: parsedBody,
         headers: requestHeaders,
-        validateStatus: () => true // Don't throw on 4xx/5xx so we can show the response
+        validateStatus: () => true
       });
 
       setResponse(res.data);
       setStatus(res.status);
       setTime(Date.now() - startTime);
+
+      if (res.status >= 400) {
+        setError(`Request failed with status ${res.status}`);
+      }
+
+      await logAction({
+        action: AuditAction.API_CALL,
+        entityType: 'APIConnection',
+        entityId: connection.id,
+        details: `API Call: ${method} ${endpoint}`,
+        metadata: { 
+          connectionName: connection.name, 
+          method, 
+          endpoint, 
+          status: res.status,
+          duration: Date.now() - startTime
+        }
+      });
     } catch (err: any) {
       setError(err.message);
       setResponse(err.response?.data || null);
@@ -176,7 +219,15 @@ export const APIConsole = ({ connection }: { connection: any }) => {
 
           {(method === 'POST' || method === 'PUT') && (
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Request Body (JSON)</label>
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Request Body (JSON)</label>
+                <button 
+                  onClick={formatRequestBody}
+                  className="text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase flex items-center gap-1 hover:underline"
+                >
+                  <FileJson size={12} /> Format JSON
+                </button>
+              </div>
               <textarea
                 value={body}
                 onChange={e => setBody(e.target.value)}
@@ -189,13 +240,19 @@ export const APIConsole = ({ connection }: { connection: any }) => {
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 p-4 rounded-2xl flex items-center gap-3 text-red-600 dark:text-red-400">
-          <AlertCircle size={20} />
-          <p className="text-sm font-medium">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 p-4 rounded-2xl flex items-start gap-3 text-red-600 dark:text-red-400 animate-in fade-in slide-in-from-top-2">
+          <AlertCircle size={20} className="shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-bold">Request Error</p>
+            <p className="text-sm opacity-90">{error}</p>
+          </div>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 transition-colors">
+            <Trash2 size={16} />
+          </button>
         </div>
       )}
 
-      <div className="flex-1 bg-[#1E1E1E] dark:bg-black rounded-2xl p-6 overflow-hidden flex flex-col shadow-xl min-h-[400px] border dark:border-gray-800">
+      <div className="flex-1 bg-[#1E1E1E] dark:bg-black rounded-2xl p-6 overflow-hidden flex flex-col shadow-xl min-h-[400px] border border-gray-800">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-4">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Response</p>
@@ -211,6 +268,26 @@ export const APIConsole = ({ connection }: { connection: any }) => {
                   </span>
                 )}
               </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {response && (
+              <>
+                <button
+                  onClick={copyToClipboard}
+                  className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-gray-400 hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-gray-800"
+                >
+                  {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+                <button
+                  onClick={clearConsole}
+                  className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-gray-400 hover:text-red-400 transition-colors px-2 py-1 rounded-md hover:bg-gray-800"
+                >
+                  <Eraser size={12} />
+                  Clear
+                </button>
+              </>
             )}
           </div>
         </div>

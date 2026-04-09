@@ -15,6 +15,7 @@ import { Plus, Edit2, Trash2, X, Save, Database, ArrowLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { logAction, AuditAction } from '../services/auditService';
 
 interface Field {
   key: string;
@@ -93,10 +94,24 @@ export const DynamicCRUD = ({ models }: { models: DataModel[] }) => {
 
       if (editingItem) {
         await updateDoc(doc(db, collectionName!, editingItem.id), payload);
+        await logAction({
+          action: AuditAction.DYNAMIC_UPDATE,
+          entityType: model.name,
+          entityId: editingItem.id,
+          details: `Updated ${model.name} record`,
+          metadata: { collectionName: model.collectionName, data: payload }
+        });
       } else {
-        await addDoc(collection(db, collectionName!), {
+        const docRef = await addDoc(collection(db, collectionName!), {
           ...payload,
           createdAt: serverTimestamp()
+        });
+        await logAction({
+          action: AuditAction.DYNAMIC_CREATE,
+          entityType: model.name,
+          entityId: docRef.id,
+          details: `Created new ${model.name} record`,
+          metadata: { collectionName: model.collectionName, data: payload }
         });
       }
       setIsFormOpen(false);
@@ -115,6 +130,13 @@ export const DynamicCRUD = ({ models }: { models: DataModel[] }) => {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, collectionName!, itemToDelete));
+      await logAction({
+        action: AuditAction.DYNAMIC_DELETE,
+        entityType: model.name,
+        entityId: itemToDelete,
+        details: `Deleted ${model.name} record with ID: ${itemToDelete}`,
+        metadata: { collectionName: model.collectionName }
+      });
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
     } catch (error) {

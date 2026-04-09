@@ -38,6 +38,7 @@ export const BlockEditor = ({ data, onChange, placeholder }: BlockEditorProps) =
       holder: containerRef.current,
       placeholder: placeholder || 'Start writing your story...',
       data: initialData,
+      logLevel: 'ERROR' as any, // Suppress warnings like getLayoutMap in iframe
       tools: {
         header: {
           class: Header as any,
@@ -53,12 +54,22 @@ export const BlockEditor = ({ data, onChange, placeholder }: BlockEditorProps) =
         image: {
           class: ImageTool,
           config: {
-            // In this simple version, we only support URL-based images as requested
+            endpoints: {
+              byFile: '/api/upload-dummy', // Dummy endpoint to satisfy the tool
+              byUrl: '/api/fetch-dummy',
+            },
             uploader: {
               uploadByUrl(url: string) {
                 return Promise.resolve({
                   success: 1,
                   file: { url }
+                });
+              },
+              uploadByFile(file: File) {
+                // For the demo/CMS, we'll use object URLs for local preview
+                return Promise.resolve({
+                  success: 1,
+                  file: { url: URL.createObjectURL(file) }
                 });
               }
             }

@@ -80,6 +80,21 @@
         "config": { "type": "object" }
       },
       "required": ["title", "path", "type", "config"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "A record of a significant user action.",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string", "description": "The type of action (e.g., CREATE_POST, DELETE_MODEL)." },
+        "entityType": { "type": "string", "description": "The type of entity affected." },
+        "entityId": { "type": "string", "description": "The ID of the entity affected." },
+        "details": { "type": "string", "description": "Additional human-readable details about the action." },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userEmail": { "type": "string" },
+        "metadata": { "type": "object", "description": "Raw data related to the action." }
+      },
+      "required": ["action", "entityType", "timestamp", "userEmail"]
     }
   },
   "firestore": {
@@ -98,6 +113,10 @@
     "/pages/{pageId}": {
       "schema": "Page",
       "description": "Custom admin pages."
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "History of administrative actions."
     }
   }
 }
