@@ -126,14 +126,14 @@ export const DynamicCRUD = ({ models }: { models: DataModel[] }) => {
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
-      <header className="bg-white border-b border-gray-200 p-6 flex justify-between items-center sticky top-0 z-10">
+      <header className="bg-white dark:bg-[#161B22] border-b border-gray-200 dark:border-gray-800 p-6 flex justify-between items-center sticky top-0 z-10">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{model.name}</h2>
-          <p className="text-sm text-gray-500">Manage records for {model.collectionName}</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{model.name}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Manage records for {model.collectionName}</p>
         </div>
         <button
           onClick={() => handleOpenForm()}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-all font-semibold shadow-lg shadow-blue-100"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-all font-semibold shadow-lg shadow-blue-100 dark:shadow-none"
         >
           <Plus size={20} />
           <span>Add {model.name}</span>
@@ -146,30 +146,30 @@ export const DynamicCRUD = ({ models }: { models: DataModel[] }) => {
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden overflow-x-auto">
+          <div className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50/50 border-b border-gray-200">
+                <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                   {model.fields.map(f => (
-                    <th key={f.key} className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">{f.label}</th>
+                    <th key={f.key} className="px-6 py-4 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{f.label}</th>
                   ))}
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {items.map((item) => (
-                  <tr key={item.id} className="group hover:bg-blue-50/30 transition-colors">
+                  <tr key={item.id} className="group hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
                     {model.fields.map(f => (
-                      <td key={f.key} className="px-6 py-4 text-sm text-gray-600">
+                      <td key={f.key} className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                         {f.type === 'boolean' ? (item[f.key] ? 'Yes' : 'No') : String(item[f.key] || '')}
                       </td>
                     ))}
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleOpenForm(item)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                        <button onClick={() => handleOpenForm(item)} className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all">
                           <Edit2 size={16} />
                         </button>
-                        <button onClick={() => handleDeleteClick(item.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                        <button onClick={() => handleDeleteClick(item.id)} className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -178,7 +178,7 @@ export const DynamicCRUD = ({ models }: { models: DataModel[] }) => {
                 ))}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={model.fields.length + 1} className="px-6 py-20 text-center text-gray-400 italic">
+                    <td colSpan={model.fields.length + 1} className="px-6 py-20 text-center text-gray-400 dark:text-gray-500 italic">
                       No records found.
                     </td>
                   </tr>
@@ -196,22 +196,22 @@ export const DynamicCRUD = ({ models }: { models: DataModel[] }) => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+              className="bg-white dark:bg-[#161B22] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
             >
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="text-xl font-bold">{editingItem ? `Edit ${model.name}` : `New ${model.name}`}</h3>
-                <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-gray-100 rounded-full"><X size={20} /></button>
+              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{editingItem ? `Edit ${model.name}` : `New ${model.name}`}</h3>
+                <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400"><X size={20} /></button>
               </div>
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 {model.fields.map(f => (
                   <div key={f.key} className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{f.label}</label>
+                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{f.label}</label>
                     {f.type === 'text' ? (
                       <textarea
                         required
                         value={formData[f.key] || ''}
                         onChange={e => setFormData({ ...formData, [f.key]: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
                         rows={4}
                       />
                     ) : f.type === 'boolean' ? (
@@ -220,9 +220,9 @@ export const DynamicCRUD = ({ models }: { models: DataModel[] }) => {
                           type="checkbox"
                           checked={formData[f.key] || false}
                           onChange={e => setFormData({ ...formData, [f.key]: e.target.checked })}
-                          className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="w-5 h-5 rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-gray-600">{f.label}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{f.label}</span>
                       </div>
                     ) : f.type === 'number' ? (
                       <input
@@ -230,7 +230,7 @@ export const DynamicCRUD = ({ models }: { models: DataModel[] }) => {
                         type="number"
                         value={formData[f.key] || 0}
                         onChange={e => setFormData({ ...formData, [f.key]: Number(e.target.value) })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     ) : (
                       <input
@@ -238,14 +238,14 @@ export const DynamicCRUD = ({ models }: { models: DataModel[] }) => {
                         type="text"
                         value={formData[f.key] || ''}
                         onChange={e => setFormData({ ...formData, [f.key]: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     )}
                   </div>
                 ))}
                 <div className="pt-4 flex justify-end gap-3">
-                  <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2 text-gray-500 font-bold">Cancel</button>
-                  <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg shadow-blue-100">
+                  <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2 text-gray-500 dark:text-gray-400 font-bold">Cancel</button>
+                  <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg shadow-blue-100 dark:shadow-none">
                     {editingItem ? 'Update' : 'Create'}
                   </button>
                 </div>

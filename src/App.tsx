@@ -14,6 +14,7 @@ import { DynamicCRUD } from './pages/DynamicCRUD';
 import { APIConsole } from './pages/APIConsole';
 import { StaticPage } from './pages/StaticPage';
 import { APIDocs } from './pages/APIDocs';
+import { ThemeProvider } from './context/ThemeContext';
 
 function AdminApp() {
   const [models, setModels] = useState<any[]>([]);
@@ -49,7 +50,7 @@ function AdminApp() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0D1117]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -102,7 +103,9 @@ function AdminApp() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AdminApp />
+      <ThemeProvider>
+        <AdminApp />
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

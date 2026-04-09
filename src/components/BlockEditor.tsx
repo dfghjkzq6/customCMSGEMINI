@@ -92,8 +92,55 @@ export const BlockEditor = ({ data, onChange, placeholder }: BlockEditorProps) =
   }, []);
 
   return (
-    <div className="prose prose-blue max-w-none border border-gray-200 rounded-xl p-6 bg-white min-h-[400px]">
-      <div ref={containerRef} />
+    <div className="prose prose-blue dark:prose-invert max-w-none border border-gray-200 dark:border-gray-800 rounded-xl p-6 bg-white dark:bg-[#161B22] min-h-[400px]">
+      <div ref={containerRef} className="dark:text-gray-100" />
+      <style>{`
+        .ce-block__content, .ce-toolbar__content { max-width: 100% !important; }
+        .cdx-block { max-width: 100% !important; }
+        .dark .ce-toolbar__plus, .dark .ce-toolbar__settings-btn {
+          color: #9ca3af;
+          background-color: #1f2937;
+        }
+        .dark .ce-toolbar__plus:hover, .dark .ce-toolbar__settings-btn:hover {
+          background-color: #374151;
+        }
+        .dark .ce-popover {
+          background-color: #1f2937;
+          border-color: #374151;
+          color: #f3f4f6;
+        }
+        .dark .ce-popover__item:hover {
+          background-color: #374151;
+        }
+        .dark .ce-popover__item-icon {
+          background-color: #111827;
+          color: #f3f4f6;
+        }
+        .dark .ce-popover__item-label {
+          color: #f3f4f6;
+        }
+        .dark .ce-inline-toolbar {
+          background-color: #1f2937;
+          border-color: #374151;
+          color: #f3f4f6;
+        }
+        .dark .ce-inline-tool:hover {
+          background-color: #374151;
+        }
+        .dark .ce-inline-tool--active {
+          color: #3b82f6;
+        }
+        .dark .ce-conversion-toolbar {
+          background-color: #1f2937;
+          border-color: #374151;
+        }
+        .dark .ce-conversion-tool:hover {
+          background-color: #374151;
+        }
+        .dark .ce-block--selected .ce-block__content {
+          background-color: #1e293b;
+        }
+      `}</style>
     </div>
   );
 };
