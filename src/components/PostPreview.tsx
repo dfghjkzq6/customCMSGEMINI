@@ -10,6 +10,8 @@ interface PostPreviewProps {
     content: string;
     contentBlocks?: any;
     status: string;
+    featuredImage?: string;
+    tags?: string[];
   };
 }
 
@@ -37,6 +39,42 @@ export const PostPreview = ({ isOpen, onClose, post }: PostPreviewProps) => {
                 <li key={i} dangerouslySetInnerHTML={{ __html: item }} />
               ))}
             </ListTag>
+          );
+        case 'checklist':
+          return (
+            <div key={index} className="space-y-2 mb-4">
+              {block.data.items.map((item: any, i: number) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded border flex items-center justify-center ${item.checked ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-300'}`}>
+                    {item.checked && <span className="text-xs">✓</span>}
+                  </div>
+                  <span className={item.checked ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-300'}>{item.text}</span>
+                </div>
+              ))}
+            </div>
+          );
+        case 'quote':
+          return (
+            <blockquote key={index} className="border-l-4 border-blue-500 pl-6 py-2 my-8 italic">
+              <p className="text-xl text-gray-800 dark:text-gray-200 mb-2">{block.data.text}</p>
+              {block.data.caption && <cite className="text-sm text-gray-500 dark:text-gray-400">— {block.data.caption}</cite>}
+            </blockquote>
+          );
+        case 'table':
+          return (
+            <div key={index} className="overflow-x-auto mb-6 border rounded-xl">
+              <table className="w-full text-sm text-left">
+                <tbody className="divide-y">
+                  {block.data.content.map((row: string[], i: number) => (
+                    <tr key={i} className={i === 0 && block.data.withHeadings ? 'bg-gray-50 dark:bg-gray-800/50 font-bold' : ''}>
+                      {row.map((cell, j) => (
+                        <td key={j} className="px-4 py-3 border-x" dangerouslySetInnerHTML={{ __html: cell }} />
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           );
         case 'code':
           return (
@@ -96,7 +134,18 @@ export const PostPreview = ({ isOpen, onClose, post }: PostPreviewProps) => {
 
             <div className="flex-1 overflow-y-auto p-8 md:p-12">
               <div className="max-w-3xl mx-auto">
-                <div className="mb-4">
+                {post.featuredImage && (
+                  <div className="mb-12 rounded-3xl overflow-hidden shadow-xl">
+                    <img 
+                      src={post.featuredImage} 
+                      alt="Featured" 
+                      className="w-full h-auto object-cover max-h-[400px]"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-3 mb-6">
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                     post.status === 'published' 
                       ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
@@ -104,7 +153,13 @@ export const PostPreview = ({ isOpen, onClose, post }: PostPreviewProps) => {
                   }`}>
                     {post.status}
                   </span>
+                  {post.tags && post.tags.map((tag, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                      #{tag}
+                    </span>
+                  ))}
                 </div>
+
                 <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-gray-100 mb-8 leading-tight">
                   {post.title || 'Untitled Post'}
                 </h1>

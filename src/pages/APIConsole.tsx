@@ -4,6 +4,22 @@ import { Terminal, Send, Loader2, Plus, Trash2, AlertCircle, Clock, CheckCircle2
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { logAction, AuditAction } from '../services/auditService';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface Header {
   key: string;
@@ -35,6 +51,7 @@ export const APIConsole = ({ connection }: { connection: any }) => {
     if (!response) return;
     navigator.clipboard.writeText(JSON.stringify(response, null, 2));
     setCopied(true);
+    toast.success('Response copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -43,6 +60,7 @@ export const APIConsole = ({ connection }: { connection: any }) => {
     setStatus(null);
     setTime(null);
     setError(null);
+    toast.info('Console cleared');
   };
 
   const addHeader = () => {
@@ -142,128 +160,149 @@ export const APIConsole = ({ connection }: { connection: any }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 p-6 space-y-6 overflow-y-auto">
-      <div className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl text-blue-600 dark:text-blue-400">
+    <div className="p-6 lg:p-10 space-y-8 max-w-7xl mx-auto flex flex-col min-h-full">
+      <Card className="border-muted shadow-sm">
+        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+          <div className="bg-primary/10 p-3 rounded-2xl text-primary">
             <Terminal size={24} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">API Console: {connection.name}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{connection.baseUrl}</p>
+            <CardTitle className="text-xl">API Console: {connection.name}</CardTitle>
+            <CardDescription className="font-mono text-xs">{connection.baseUrl}</CardDescription>
           </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex gap-3">
-            <select
-              value={method}
-              onChange={e => setMethod(e.target.value as any)}
-              className="px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold bg-gray-50 dark:bg-[#0F1115] text-gray-900 dark:text-gray-100"
-            >
-              <option value="GET">GET</option>
-              <option value="POST">POST</option>
-              <option value="PUT">PUT</option>
-              <option value="DELETE">DELETE</option>
-            </select>
-            <input
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Select value={method} onValueChange={(val) => setMethod(val as any)}>
+              <SelectTrigger className="w-full sm:w-[120px] font-bold h-11">
+                <SelectValue placeholder="Method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="GET">GET</SelectItem>
+                <SelectItem value="POST">POST</SelectItem>
+                <SelectItem value="PUT">PUT</SelectItem>
+                <SelectItem value="DELETE">DELETE</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
               value={endpoint}
               onChange={e => setEndpoint(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+              className="flex-1 h-11 font-mono"
               placeholder="/endpoint?query=param"
             />
-            <button
+            <Button
               onClick={handleSend}
               disabled={loading}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-all font-bold shadow-lg shadow-blue-100 dark:shadow-none disabled:opacity-50"
+              className="h-11 px-8 font-bold gap-2"
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
               <span>Send</span>
-            </button>
+            </Button>
           </div>
 
           {/* Headers Section */}
-          <div className="space-y-2">
+          <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Custom Headers</label>
-              <button 
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Custom Headers</span>
+                <Separator className="w-12" />
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
                 onClick={addHeader}
-                className="text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase flex items-center gap-1 hover:underline"
+                className="h-7 text-[10px] font-bold uppercase gap-1"
               >
                 <Plus size={12} /> Add Header
-              </button>
+              </Button>
             </div>
             <div className="space-y-2">
               {headers.map((h, i) => (
-                <div key={i} className="flex gap-2">
-                  <input
+                <div key={i} className="flex gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+                  <Input
                     value={h.key}
                     onChange={e => updateHeader(i, 'key', e.target.value)}
                     placeholder="Key"
-                    className="flex-1 px-3 py-1.5 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-lg text-xs font-mono"
+                    className="flex-1 h-9 text-xs font-mono"
                   />
-                  <input
+                  <Input
                     value={h.value}
                     onChange={e => updateHeader(i, 'value', e.target.value)}
                     placeholder="Value"
-                    className="flex-1 px-3 py-1.5 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-lg text-xs font-mono"
+                    className="flex-1 h-9 text-xs font-mono"
                   />
-                  <button onClick={() => removeHeader(i)} className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => removeHeader(i)} 
+                    className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                  >
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </div>
               ))}
-              {headers.length === 0 && <p className="text-[10px] text-gray-400 dark:text-gray-500 italic">No custom headers added.</p>}
+              {headers.length === 0 && <p className="text-[10px] text-muted-foreground italic">No custom headers added.</p>}
             </div>
           </div>
 
           {(method === 'POST' || method === 'PUT') && (
-            <div className="space-y-1">
+            <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Request Body (JSON)</label>
-                <button 
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Request Body (JSON)</span>
+                  <Separator className="w-12" />
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
                   onClick={formatRequestBody}
-                  className="text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase flex items-center gap-1 hover:underline"
+                  className="h-7 text-[10px] font-bold uppercase gap-1"
                 >
                   <FileJson size={12} /> Format JSON
-                </button>
+                </Button>
               </div>
-              <textarea
+              <Textarea
                 value={body}
                 onChange={e => setBody(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                rows={5}
+                className="font-mono text-sm min-h-[120px]"
+                placeholder="{}"
               />
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 p-4 rounded-2xl flex items-start gap-3 text-red-600 dark:text-red-400 animate-in fade-in slide-in-from-top-2">
-          <AlertCircle size={20} className="shrink-0 mt-0.5" />
+        <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-xl flex items-start gap-3 text-destructive animate-in fade-in slide-in-from-top-2">
+          <AlertCircle size={18} className="shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-bold">Request Error</p>
-            <p className="text-sm opacity-90">{error}</p>
+            <p className="text-xs opacity-90">{error}</p>
           </div>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 transition-colors">
-            <Trash2 size={16} />
-          </button>
+          <Button variant="ghost" size="icon" onClick={() => setError(null)} className="h-8 w-8 text-destructive hover:bg-destructive/10">
+            <Trash2 size={14} />
+          </Button>
         </div>
       )}
 
-      <div className="flex-1 bg-[#1E1E1E] dark:bg-black rounded-2xl p-6 overflow-hidden flex flex-col shadow-xl min-h-[400px] border border-gray-800">
-        <div className="flex justify-between items-center mb-4">
+      <Card className="flex-1 bg-zinc-950 text-zinc-300 border-zinc-800 overflow-hidden flex flex-col min-h-[400px] shadow-2xl">
+        <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
           <div className="flex items-center gap-4">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Response</p>
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Response</span>
             {status && (
               <div className="flex items-center gap-3">
-                <span className={`text-[10px] font-black uppercase flex items-center gap-1 ${getStatusColor(status)}`}>
+                <Badge 
+                  variant="outline"
+                  className={cn(
+                    "text-[10px] font-black uppercase flex items-center gap-1 border-0",
+                    status >= 200 && status < 300 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+                  )}
+                >
                   {status >= 200 && status < 300 ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
                   {status} {status >= 200 && status < 300 ? 'OK' : 'Error'}
-                </span>
+                </Badge>
                 {time && (
-                  <span className="text-[10px] text-gray-500 font-bold flex items-center gap-1">
+                  <span className="text-[10px] text-zinc-500 font-bold flex items-center gap-1">
                     <Clock size={12} /> {time}ms
                   </span>
                 )}
@@ -273,45 +312,51 @@ export const APIConsole = ({ connection }: { connection: any }) => {
           <div className="flex items-center gap-2">
             {response && (
               <>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={copyToClipboard}
-                  className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-gray-400 hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-gray-800"
+                  className="h-7 text-[10px] font-bold uppercase text-zinc-400 hover:text-white hover:bg-zinc-800 gap-1.5"
                 >
                   {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
                   {copied ? 'Copied' : 'Copy'}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={clearConsole}
-                  className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-gray-400 hover:text-red-400 transition-colors px-2 py-1 rounded-md hover:bg-gray-800"
+                  className="h-7 text-[10px] font-bold uppercase text-zinc-400 hover:text-red-400 hover:bg-zinc-800 gap-1.5"
                 >
                   <Eraser size={12} />
                   Clear
-                </button>
+                </Button>
               </>
             )}
           </div>
         </div>
-        <div className="flex-1 overflow-auto rounded-xl">
-          {response ? (
-            <SyntaxHighlighter
-              language="json"
-              style={atomDark}
-              customStyle={{
-                margin: 0,
-                padding: '1.5rem',
-                fontSize: '0.875rem',
-                backgroundColor: 'transparent',
-              }}
-            >
-              {JSON.stringify(response, null, 2)}
-            </SyntaxHighlighter>
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-600 dark:text-gray-500 font-mono text-sm italic">
-              {loading ? 'Sending request...' : '// Response will appear here...'}
-            </div>
-          )}
-        </div>
-      </div>
+        <ScrollArea className="flex-1">
+          <div className="p-0">
+            {response ? (
+              <SyntaxHighlighter
+                language="json"
+                style={atomDark}
+                customStyle={{
+                  margin: 0,
+                  padding: '1.5rem',
+                  fontSize: '0.875rem',
+                  backgroundColor: 'transparent',
+                }}
+              >
+                {JSON.stringify(response, null, 2)}
+              </SyntaxHighlighter>
+            ) : (
+              <div className="h-[350px] flex items-center justify-center text-zinc-600 font-mono text-sm italic">
+                {loading ? 'Sending request...' : '// Response will appear here...'}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </Card>
     </div>
   );
 };

@@ -8,11 +8,40 @@ import {
   doc, 
   query 
 } from 'firebase/firestore';
-import { Plus, Edit2, Trash2, X, Save, Layers, Settings } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Layers, Settings, MoreHorizontal, Layout as LayoutIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { logAction, AuditAction } from '../services/auditService';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogDescription
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface Page {
   id: string;
@@ -126,159 +155,186 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
-      <header className="bg-white dark:bg-[#161B22] border-b border-gray-200 dark:border-gray-800 p-6 flex justify-between items-center sticky top-0 z-10">
+    <div className="p-6 lg:p-10 space-y-8 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Pages</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Define custom admin pages and navigation</p>
+          <h2 className="text-3xl font-bold tracking-tight">Pages</h2>
+          <p className="text-muted-foreground">Define custom admin pages and navigation.</p>
         </div>
-        <button
-          onClick={() => handleOpenForm()}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-all font-semibold shadow-lg shadow-blue-100 dark:shadow-none"
-        >
-          <Plus size={20} />
+        <Button onClick={() => handleOpenForm()} className="gap-2 font-bold h-11 px-6">
+          <Plus size={18} />
           <span>New Page</span>
-        </button>
-      </header>
+        </Button>
+      </div>
 
-      <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {pages.map((page) => (
-          <div key={page.id} className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm hover:shadow-md transition-shadow group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-xl text-purple-600 dark:text-purple-400">
-                <Layers size={24} />
+          <Card key={page.id} className="group hover:shadow-md transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div className="bg-purple-500/10 p-2.5 rounded-lg text-purple-500">
+                <Layers size={20} />
               </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleOpenForm(page)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
-                  <Edit2 size={16} />
-                </button>
-                <button onClick={() => handleDeleteClick(page.id)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400">
-                  <Trash2 size={16} />
-                </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" />}>
+                  <MoreHorizontal size={16} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleOpenForm(page)}>
+                    <Edit2 className="mr-2 h-4 w-4" />
+                    <span>Edit</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleDeleteClick(page.id)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Delete</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <CardTitle className="text-xl">{page.title}</CardTitle>
+              <CardDescription className="font-mono text-[10px] mt-1">
+                path: /p{page.path}
+              </CardDescription>
+              
+              <div className="mt-6 flex items-center gap-2">
+                <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0">
+                  Type: {page.type}
+                </Badge>
               </div>
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{page.title}</h3>
-            <p className="text-xs font-mono text-gray-400 dark:text-gray-500 mb-4">path: /p{page.path}</p>
-            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">
-              Type: {page.type}
-            </span>
-          </div>
+            </CardContent>
+          </Card>
         ))}
         {pages.length === 0 && (
-          <div className="col-span-full py-20 text-center text-gray-400 dark:text-gray-500 italic">
+          <div className="col-span-full py-20 text-center text-muted-foreground italic border-2 border-dashed rounded-2xl">
             No custom pages defined yet.
           </div>
         )}
       </div>
 
-      <AnimatePresence>
-        {isFormOpen && (
-          <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-[#161B22] rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden"
-            >
-              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{editingPage ? 'Edit Page' : 'New Custom Page'}</h3>
-                <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400"><X size={20} /></button>
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh]">
+          <DialogHeader className="p-6 pb-0 shrink-0">
+            <DialogTitle>{editingPage ? 'Edit Page' : 'New Custom Page'}</DialogTitle>
+            <DialogDescription>
+              Create a new navigation entry and configure its behavior.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto relative">
+            <div className="p-6 space-y-6 pb-32">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pageTitle">Page Title</Label>
+                  <Input
+                    id="pageTitle"
+                    required
+                    value={formData.title}
+                    onChange={e => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g. User Management"
+                    className="text-base md:text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pagePath">Path</Label>
+                  <Input
+                    id="pagePath"
+                    required
+                    value={formData.path}
+                    onChange={e => setFormData({ ...formData, path: e.target.value.startsWith('/') ? e.target.value : `/${e.target.value}` })}
+                    className="font-mono text-base md:text-sm"
+                    placeholder="/users"
+                  />
+                </div>
               </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Page Title</label>
-                    <input
-                      required
-                      value={formData.title}
-                      onChange={e => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g. User Management"
+
+              <div className="space-y-2">
+                <Label htmlFor="pageType">Page Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(val) => setFormData({ ...formData, type: val as any, config: {} })}
+                >
+                  <SelectTrigger id="pageType" className="w-full text-base md:text-sm h-10">
+                    <SelectValue placeholder="Select Page Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="static">Static (Markdown/HTML)</SelectItem>
+                    <SelectItem value="list">List (Data Model)</SelectItem>
+                    <SelectItem value="form">Form (Data Model)</SelectItem>
+                    <SelectItem value="api-console">API Console (External API)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Dynamic Config based on Type */}
+              <div className="bg-muted/50 p-6 rounded-xl border space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Settings size={14} className="text-muted-foreground" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Configuration</span>
+                </div>
+                
+                {formData.type === 'static' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="staticContent" className="text-xs">Content (HTML/Markdown)</Label>
+                    <Textarea
+                      id="staticContent"
+                      value={formData.config.content || ''}
+                      onChange={e => setFormData({ ...formData, config: { ...formData.config, content: e.target.value } })}
+                      className="font-mono text-base md:text-sm min-h-[200px]"
+                      placeholder="<h1>Hello World</h1>"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Path</label>
-                    <input
-                      required
-                      value={formData.path}
-                      onChange={e => setFormData({ ...formData, path: e.target.value.startsWith('/') ? e.target.value : `/${e.target.value}` })}
-                      className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                      placeholder="/users"
-                    />
+                )}
+
+                {(formData.type === 'list' || formData.type === 'form') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="modelId" className="text-xs">Select Data Model</Label>
+                    <Select
+                      value={formData.config.modelId || ''}
+                      onValueChange={(val) => setFormData({ ...formData, config: { ...formData.config, modelId: val } })}
+                    >
+                      <SelectTrigger id="modelId" className="w-full text-base md:text-sm h-10">
+                        <SelectValue placeholder="Select a model..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {models.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
+                )}
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Page Type</label>
-                  <select
-                    value={formData.type}
-                    onChange={e => setFormData({ ...formData, type: e.target.value as any, config: {} })}
-                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="static">Static (Markdown/HTML)</option>
-                    <option value="list">List (Data Model)</option>
-                    <option value="form">Form (Data Model)</option>
-                    <option value="api-console">API Console (External API)</option>
-                  </select>
-                </div>
+                {formData.type === 'api-console' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="connectionId" className="text-xs">Select API Connection</Label>
+                    <Select
+                      value={formData.config.connectionId || ''}
+                      onValueChange={(val) => setFormData({ ...formData, config: { ...formData.config, connectionId: val } })}
+                    >
+                      <SelectTrigger id="connectionId" className="w-full text-base md:text-sm h-10">
+                        <SelectValue placeholder="Select a connection..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {connections.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </div>
 
-                {/* Dynamic Config based on Type */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-4">
-                  <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Configuration</p>
-                  
-                  {formData.type === 'static' && (
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Content (HTML/Markdown)</label>
-                      <textarea
-                        value={formData.config.content || ''}
-                        onChange={e => setFormData({ ...formData, config: { ...formData.config, content: e.target.value } })}
-                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                        rows={6}
-                        placeholder="<h1>Hello World</h1>"
-                      />
-                    </div>
-                  )}
-
-                  {(formData.type === 'list' || formData.type === 'form') && (
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Select Data Model</label>
-                      <select
-                        value={formData.config.modelId || ''}
-                        onChange={e => setFormData({ ...formData, config: { ...formData.config, modelId: e.target.value } })}
-                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Select a model...</option>
-                        {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                      </select>
-                    </div>
-                  )}
-
-                  {formData.type === 'api-console' && (
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Select API Connection</label>
-                      <select
-                        value={formData.config.connectionId || ''}
-                        onChange={e => setFormData({ ...formData, config: { ...formData.config, connectionId: e.target.value } })}
-                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Select a connection...</option>
-                        {connections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-4 flex justify-end gap-3">
-                  <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2 text-gray-500 dark:text-gray-400 font-bold">Cancel</button>
-                  <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg shadow-blue-100 dark:shadow-none">
-                    {editingPage ? 'Update' : 'Create'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+            <DialogFooter className="p-6 border-t bg-background sticky bottom-0 z-10 shrink-0 sm:flex-row flex-col gap-2">
+              <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)} className="w-full sm:w-auto">
+                Cancel
+              </Button>
+              <Button type="submit" className="font-bold px-8 w-full sm:w-auto">
+                {editingPage ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}

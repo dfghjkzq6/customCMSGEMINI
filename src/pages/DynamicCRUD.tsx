@@ -11,11 +11,42 @@ import {
   orderBy,
   serverTimestamp
 } from 'firebase/firestore';
-import { Plus, Edit2, Trash2, X, Save, Database, ArrowLeft } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Database, ArrowLeft, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { logAction, AuditAction } from '../services/auditService';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogDescription
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface Field {
   key: string;
@@ -147,135 +178,155 @@ export const DynamicCRUD = ({ models }: { models: DataModel[] }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
-      <header className="bg-white dark:bg-[#161B22] border-b border-gray-200 dark:border-gray-800 p-6 flex justify-between items-center sticky top-0 z-10">
+    <div className="p-6 lg:p-10 space-y-8 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{model.name}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Manage records for {model.collectionName}</p>
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest bg-primary/5 text-primary border-primary/10">
+              Dynamic Collection
+            </Badge>
+          </div>
+          <h2 className="text-3xl font-bold tracking-tight">{model.name}</h2>
+          <p className="text-muted-foreground">Manage records for {model.collectionName}.</p>
         </div>
-        <button
-          onClick={() => handleOpenForm()}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-all font-semibold shadow-lg shadow-blue-100 dark:shadow-none"
-        >
-          <Plus size={20} />
+        <Button onClick={() => handleOpenForm()} className="gap-2 font-bold h-11 px-6">
+          <Plus size={18} />
           <span>Add {model.name}</span>
-        </button>
-      </header>
-
-      <div className="p-6">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
-                  {model.fields.map(f => (
-                    <th key={f.key} className="px-6 py-4 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{f.label}</th>
-                  ))}
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {items.map((item) => (
-                  <tr key={item.id} className="group hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
-                    {model.fields.map(f => (
-                      <td key={f.key} className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {f.type === 'boolean' ? (item[f.key] ? 'Yes' : 'No') : String(item[f.key] || '')}
-                      </td>
-                    ))}
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleOpenForm(item)} className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all">
-                          <Edit2 size={16} />
-                        </button>
-                        <button onClick={() => handleDeleteClick(item.id)} className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr>
-                    <td colSpan={model.fields.length + 1} className="px-6 py-20 text-center text-gray-400 dark:text-gray-500 italic">
-                      No records found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+        </Button>
       </div>
 
-      <AnimatePresence>
-        {isFormOpen && (
-          <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-[#161B22] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
-            >
-              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{editingItem ? `Edit ${model.name}` : `New ${model.name}`}</h3>
-                <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400"><X size={20} /></button>
-              </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {model.fields.map(f => (
+                    <TableHead key={f.key}>{f.label}</TableHead>
+                  ))}
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id} className="group">
+                    {model.fields.map(f => (
+                      <TableCell key={f.key}>
+                        {f.type === 'boolean' ? (
+                          <Badge variant={item[f.key] ? "default" : "secondary"} className="text-[10px] px-2 py-0">
+                            {item[f.key] ? 'Yes' : 'No'}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm">{String(item[f.key] || '')}</span>
+                        )}
+                      </TableCell>
+                    ))}
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
+                          <MoreHorizontal size={16} />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenForm(item)}>
+                            <Edit2 className="mr-2 h-4 w-4" />
+                            <span>Edit</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteClick(item.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Delete</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {items.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={model.fields.length + 1} className="h-40 text-center text-muted-foreground italic">
+                      No records found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-xl p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>{editingItem ? `Edit ${model.name}` : `New ${model.name}`}</DialogTitle>
+            <DialogDescription>
+              Fill in the details for this {model.name} record.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="flex flex-col max-h-[80vh]">
+            <ScrollArea className="flex-1 p-6">
+              <div className="space-y-6">
                 {model.fields.map(f => (
-                  <div key={f.key} className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{f.label}</label>
+                  <div key={f.key} className="space-y-2">
+                    <Label htmlFor={f.key}>{f.label}</Label>
                     {f.type === 'text' ? (
-                      <textarea
+                      <Textarea
+                        id={f.key}
                         required
                         value={formData[f.key] || ''}
                         onChange={e => setFormData({ ...formData, [f.key]: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                        rows={4}
+                        className="min-h-[100px]"
                       />
                     ) : f.type === 'boolean' ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
+                      <div className="flex items-center space-x-2 pt-2">
+                        <Switch
+                          id={f.key}
                           checked={formData[f.key] || false}
-                          onChange={e => setFormData({ ...formData, [f.key]: e.target.checked })}
-                          className="w-5 h-5 rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500"
+                          onCheckedChange={checked => setFormData({ ...formData, [f.key]: checked })}
                         />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{f.label}</span>
+                        <Label htmlFor={f.key} className="font-normal text-muted-foreground">
+                          {formData[f.key] ? 'Enabled' : 'Disabled'}
+                        </Label>
                       </div>
                     ) : f.type === 'number' ? (
-                      <input
+                      <Input
+                        id={f.key}
                         required
                         type="number"
                         value={formData[f.key] || 0}
                         onChange={e => setFormData({ ...formData, [f.key]: Number(e.target.value) })}
-                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     ) : (
-                      <input
+                      <Input
+                        id={f.key}
                         required
                         type="text"
                         value={formData[f.key] || ''}
                         onChange={e => setFormData({ ...formData, [f.key]: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     )}
                   </div>
                 ))}
-                <div className="pt-4 flex justify-end gap-3">
-                  <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2 text-gray-500 dark:text-gray-400 font-bold">Cancel</button>
-                  <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg shadow-blue-100 dark:shadow-none">
-                    {editingItem ? 'Update' : 'Create'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              </div>
+            </ScrollArea>
+
+            <DialogFooter className="p-6 border-t bg-muted/20">
+              <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="font-bold px-8">
+                {editingItem ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}

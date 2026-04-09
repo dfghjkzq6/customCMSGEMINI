@@ -7,6 +7,7 @@ import { Layout } from './components/Layout';
 
 // Pages
 import { Posts } from './pages/Posts';
+import { Dashboard } from './pages/Dashboard';
 import { DataModels } from './pages/DataModels';
 import { APIConnections } from './pages/APIConnections';
 import { Pages } from './pages/Pages';
@@ -62,7 +63,8 @@ function AdminApp() {
       <Layout customPages={customPages}>
         <Routes>
           {/* Core Pages */}
-          <Route path="/" element={<Posts />} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/posts" element={<Posts />} />
           <Route path="/models" element={<DataModels />} />
           <Route path="/connections" element={<APIConnections />} />
           <Route path="/audit" element={<AuditLogs />} />

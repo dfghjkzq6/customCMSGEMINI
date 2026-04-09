@@ -1,5 +1,12 @@
 import React from 'react';
-import { BookOpen, Copy, Check } from 'lucide-react';
+import { BookOpen, Copy, Check, Terminal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 
 export const APIDocs = ({ models }: { models: any[] }) => {
   const [copied, setCopied] = React.useState<string | null>(null);
@@ -7,20 +14,25 @@ export const APIDocs = ({ models }: { models: any[] }) => {
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
+    toast.success('Copied to clipboard');
     setTimeout(() => setCopied(null), 2000);
   };
 
   return (
-    <div className="flex-1 p-6 lg:p-12 max-w-5xl mx-auto space-y-12">
-      <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <BookOpen className="text-blue-600 dark:text-blue-400" size={32} />
-          <h1 className="text-4xl font-black text-gray-900 dark:text-gray-100">REST API Documentation</h1>
+    <div className="p-6 lg:p-10 space-y-12 max-w-5xl mx-auto">
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="bg-primary/10 p-3 rounded-2xl text-primary">
+            <BookOpen size={32} />
+          </div>
+          <div>
+            <h1 className="text-4xl font-black tracking-tight">REST API Docs</h1>
+            <p className="text-muted-foreground text-lg">Automatically generated endpoints for your custom data models.</p>
+          </div>
         </div>
-        <p className="text-gray-500 dark:text-gray-400 text-lg">Automatically generated endpoints for your custom data models.</p>
       </div>
 
-      <div className="space-y-16">
+      <div className="space-y-20">
         {models.map((model) => {
           const baseUrl = `${window.location.origin}/api/${model.collectionName}`;
           
@@ -33,51 +45,66 @@ export const APIDocs = ({ models }: { models: any[] }) => {
           ];
 
           return (
-            <section key={model.id} className="space-y-6">
-              <div className="border-b border-gray-200 dark:border-gray-800 pb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{model.name} API</h2>
-                <p className="text-sm font-mono text-gray-400 dark:text-gray-500">Base Path: /api/{model.collectionName}</p>
+            <section key={model.id} className="space-y-8">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold">{model.name} API</h2>
+                <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+                  <Terminal size={12} />
+                  <span>Base Path: /api/{model.collectionName}</span>
+                </div>
+                <Separator className="mt-4" />
               </div>
 
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {endpoints.map((ep, i) => (
-                  <div key={i} className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                  <Card key={i} className="overflow-hidden border-muted shadow-sm">
+                    <div className="p-4 bg-muted/30 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-lg text-xs font-black ${
-                          ep.method === 'GET' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                          ep.method === 'POST' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                          ep.method === 'PUT' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        }`}>
+                        <Badge 
+                          className={cn(
+                            "font-black px-3 py-1 rounded-md",
+                            ep.method === 'GET' ? "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20" :
+                            ep.method === 'POST' ? "bg-green-500/10 text-green-500 hover:bg-green-500/20" :
+                            ep.method === 'PUT' ? "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20" :
+                            "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                          )}
+                        >
                           {ep.method}
-                        </span>
-                        <code className="text-sm font-bold text-gray-700 dark:text-gray-300">{ep.path || '/'}</code>
+                        </Badge>
+                        <code className="text-sm font-bold opacity-80">{ep.path || '/'}</code>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{ep.desc}</p>
+                      <p className="text-xs text-muted-foreground font-medium">{ep.desc}</p>
                     </div>
-                    <div className="p-4 space-y-4">
+                    <CardContent className="p-6 space-y-6">
                       <div className="relative group">
-                        <pre className="bg-gray-900 dark:bg-black text-gray-300 p-4 rounded-xl text-xs overflow-x-auto border dark:border-gray-800">
+                        <div className="absolute top-3 right-3 z-10">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 bg-black/50 text-white hover:bg-black/70 hover:text-white backdrop-blur-sm"
+                            onClick={() => handleCopy(`curl -X ${ep.method} ${baseUrl}${ep.path}`, `${model.id}-${i}`)}
+                          >
+                            {copied === `${model.id}-${i}` ? <Check size={14} /> : <Copy size={14} />}
+                          </Button>
+                        </div>
+                        <pre className="bg-zinc-950 text-zinc-300 p-5 rounded-xl text-xs overflow-x-auto border border-zinc-800 font-mono leading-relaxed">
                           {`curl -X ${ep.method} ${baseUrl}${ep.path}`}
                         </pre>
-                        <button 
-                          onClick={() => handleCopy(`curl -X ${ep.method} ${baseUrl}${ep.path}`, `${model.id}-${i}`)}
-                          className="absolute top-2 right-2 p-2 bg-gray-800 text-gray-400 hover:text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          {copied === `${model.id}-${i}` ? <Check size={14} /> : <Copy size={14} />}
-                        </button>
                       </div>
+                      
                       {ep.body && (
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sample Payload</p>
-                          <pre className="bg-gray-50 dark:bg-gray-800/30 text-gray-600 dark:text-gray-400 p-4 rounded-xl text-xs border border-gray-100 dark:border-gray-800">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Sample Payload</span>
+                            <Separator className="flex-1" />
+                          </div>
+                          <pre className="bg-muted/30 text-muted-foreground p-5 rounded-xl text-xs border font-mono">
                             {JSON.stringify(ep.body, null, 2)}
                           </pre>
                         </div>
                       )}
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </section>
@@ -85,8 +112,13 @@ export const APIDocs = ({ models }: { models: any[] }) => {
         })}
 
         {models.length === 0 && (
-          <div className="py-20 text-center bg-gray-50 dark:bg-gray-800/30 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-800">
-            <p className="text-gray-400 dark:text-gray-500 italic">No custom data models defined yet. API documentation will appear here once you create a model.</p>
+          <div className="py-24 text-center bg-muted/30 rounded-[2rem] border-2 border-dashed flex flex-col items-center gap-4">
+            <div className="bg-muted p-4 rounded-full">
+              <BookOpen size={32} className="text-muted-foreground opacity-20" />
+            </div>
+            <p className="text-muted-foreground max-w-xs mx-auto italic">
+              No custom data models defined yet. API documentation will appear here once you create a model.
+            </p>
           </div>
         )}
       </div>

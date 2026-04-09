@@ -8,11 +8,38 @@ import {
   doc, 
   query 
 } from 'firebase/firestore';
-import { Plus, Edit2, Trash2, X, Save, Globe, Terminal } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Globe, Terminal, MoreHorizontal, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { logAction, AuditAction } from '../services/auditService';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogDescription
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 interface APIConnection {
   id: string;
@@ -130,127 +157,144 @@ export const APIConnections = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
-      <header className="bg-white dark:bg-[#161B22] border-b border-gray-200 dark:border-gray-800 p-6 flex justify-between items-center sticky top-0 z-10">
+    <div className="p-6 lg:p-10 space-y-8 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">API Connections</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Configure external REST APIs to integrate with your CMS</p>
+          <h2 className="text-3xl font-bold tracking-tight">API Connections</h2>
+          <p className="text-muted-foreground">Configure external REST APIs to integrate with your CMS.</p>
         </div>
-        <button
-          onClick={() => handleOpenForm()}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-all font-semibold shadow-lg shadow-blue-100 dark:shadow-none"
-        >
-          <Plus size={20} />
+        <Button onClick={() => handleOpenForm()} className="gap-2 font-bold h-11 px-6">
+          <Plus size={18} />
           <span>New Connection</span>
-        </button>
-      </header>
+        </Button>
+      </div>
 
-      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {connections.map((conn) => (
-          <div key={conn.id} className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm hover:shadow-md transition-shadow group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-xl text-green-600 dark:text-green-400">
-                <Globe size={24} />
+          <Card key={conn.id} className="group hover:shadow-md transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div className="bg-green-500/10 p-2.5 rounded-lg text-green-500">
+                <Globe size={20} />
               </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleOpenForm(conn)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
-                  <Edit2 size={16} />
-                </button>
-                <button onClick={() => handleDeleteClick(conn.id)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400">
-                  <Trash2 size={16} />
-                </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" />}>
+                  <MoreHorizontal size={16} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleOpenForm(conn)}>
+                    <Edit2 className="mr-2 h-4 w-4" />
+                    <span>Edit</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleDeleteClick(conn.id)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Delete</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <CardTitle className="text-xl">{conn.name}</CardTitle>
+              <CardDescription className="font-mono text-[10px] mt-1 truncate">
+                {conn.baseUrl}
+              </CardDescription>
+              
+              <div className="mt-6 flex items-center gap-2">
+                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-muted/50">
+                  <ShieldCheck size={10} className="mr-1" />
+                  Auth: {conn.authType}
+                </Badge>
               </div>
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{conn.name}</h3>
-            <p className="text-xs font-mono text-gray-400 dark:text-gray-500 mb-4 truncate">{conn.baseUrl}</p>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">
-                Auth: {conn.authType}
-              </span>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ))}
         {connections.length === 0 && (
-          <div className="col-span-full py-20 text-center text-gray-400 dark:text-gray-500 italic">
+          <div className="col-span-full py-20 text-center text-muted-foreground italic border-2 border-dashed rounded-2xl">
             No API connections configured yet.
           </div>
         )}
       </div>
 
-      <AnimatePresence>
-        {isFormOpen && (
-          <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-[#161B22] rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden"
-            >
-              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{editingConn ? 'Edit Connection' : 'New API Connection'}</h3>
-                <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400"><X size={20} /></button>
-              </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Connection Name</label>
-                  <input
-                    required
-                    value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. Weather API"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Base URL</label>
-                  <input
-                    required
-                    type="url"
-                    value={formData.baseUrl}
-                    onChange={e => setFormData({ ...formData, baseUrl: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                    placeholder="https://api.example.com/v1"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Auth Type</label>
-                    <select
-                      value={formData.authType}
-                      onChange={e => setFormData({ ...formData, authType: e.target.value as any })}
-                      className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="none">None</option>
-                      <option value="apiKeyHeader">API Key (Header)</option>
-                      <option value="bearerToken">Bearer Token</option>
-                    </select>
-                  </div>
-                  {formData.authType !== 'none' && (
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Auth Value</label>
-                      <input
-                        required
-                        type="password"
-                        value={formData.authValue}
-                        onChange={e => setFormData({ ...formData, authValue: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0F1115] text-gray-900 dark:text-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Secret key..."
-                      />
-                    </div>
-                  )}
-                </div>
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editingConn ? 'Edit Connection' : 'New API Connection'}</DialogTitle>
+            <DialogDescription>
+              Set up the base URL and authentication for your external API.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="connName">Connection Name</Label>
+              <Input
+                id="connName"
+                required
+                value={formData.name}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Weather API"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="baseUrl">Base URL</Label>
+              <Input
+                id="baseUrl"
+                required
+                type="url"
+                value={formData.baseUrl}
+                onChange={e => setFormData({ ...formData, baseUrl: e.target.value })}
+                className="font-mono"
+                placeholder="https://api.example.com/v1"
+              />
+            </div>
 
-                <div className="pt-4 flex justify-end gap-3">
-                  <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2 text-gray-500 dark:text-gray-400 font-bold">Cancel</button>
-                  <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg shadow-blue-100 dark:shadow-none">
-                    {editingConn ? 'Update' : 'Create'}
-                  </button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="authType">Auth Type</Label>
+                <Select
+                  value={formData.authType}
+                  onValueChange={(val) => setFormData({ ...formData, authType: val as any })}
+                >
+                  <SelectTrigger id="authType">
+                    <SelectValue placeholder="Select Auth Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="apiKeyHeader">API Key (Header)</SelectItem>
+                    <SelectItem value="bearerToken">Bearer Token</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {formData.authType !== 'none' && (
+                <div className="space-y-2">
+                  <Label htmlFor="authValue">Auth Value</Label>
+                  <Input
+                    id="authValue"
+                    required
+                    type="password"
+                    value={formData.authValue}
+                    onChange={e => setFormData({ ...formData, authValue: e.target.value })}
+                    placeholder="Secret key..."
+                  />
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              )}
+            </div>
+
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="font-bold px-8">
+                {editingConn ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}

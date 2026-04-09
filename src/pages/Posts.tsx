@@ -11,13 +11,34 @@ import {
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
-import { Plus, Edit2, Trash2, X, Save, FileText, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, FileText, Eye, MoreHorizontal, Image as ImageIcon, Tag, Hash } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { BlockEditor } from '../components/BlockEditor';
 import { PostPreview } from '../components/PostPreview';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { logAction, AuditAction } from '../services/auditService';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 interface Post {
   id: string;
@@ -26,6 +47,8 @@ interface Post {
   content: string;
   contentBlocks?: any;
   status: 'draft' | 'published';
+  featuredImage?: string;
+  tags?: string[];
   createdAt: any;
   updatedAt: any;
 }
@@ -43,7 +66,9 @@ export const Posts = () => {
     slug: '',
     content: '',
     contentBlocks: null as any,
-    status: 'draft' as 'draft' | 'published'
+    status: 'draft' as 'draft' | 'published',
+    featuredImage: '',
+    tags: [] as string[]
   });
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +96,9 @@ export const Posts = () => {
         slug: post.slug,
         content: post.content,
         contentBlocks: post.contentBlocks || null,
-        status: post.status
+        status: post.status,
+        featuredImage: post.featuredImage || '',
+        tags: post.tags || []
       });
     } else {
       setEditingPost(null);
@@ -80,7 +107,9 @@ export const Posts = () => {
         slug: '',
         content: '',
         contentBlocks: null,
-        status: 'draft'
+        status: 'draft',
+        featuredImage: '',
+        tags: []
       });
     }
     setIsFormOpen(true);
@@ -154,158 +183,223 @@ export const Posts = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
-      <header className="bg-white dark:bg-[#161B22] border-b border-gray-200 dark:border-gray-800 p-6 flex justify-between items-center sticky top-0 z-10">
+    <div className="p-6 lg:p-10 space-y-8 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Posts</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Manage your blog content and drafts</p>
+          <h2 className="text-3xl font-bold tracking-tight">Posts</h2>
+          <p className="text-muted-foreground">Manage your blog content and drafts.</p>
         </div>
-        <button
-          onClick={() => handleOpenForm()}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-all font-semibold shadow-lg shadow-blue-100 dark:shadow-none"
-        >
-          <Plus size={20} />
+        <Button onClick={() => handleOpenForm()} className="gap-2 font-bold h-11 px-6">
+          <Plus size={18} />
           <span>New Post</span>
-        </button>
-      </header>
+        </Button>
+      </div>
 
-      <div className="p-6">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-[#161B22] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Slug</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[40%]">Title</TableHead>
+                  <TableHead>Slug</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 <AnimatePresence initial={false}>
                   {posts.map((post) => (
-                    <motion.tr
-                      key={post.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="group hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-gray-900 dark:text-gray-100">{post.title}</div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-xs">{post.content.substring(0, 60)}...</div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400 font-mono text-xs">{post.slug}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          post.status === 'published' 
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                        }`}>
-                          {post.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">{formatDate(post.createdAt)}</td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => handleOpenForm(post)}
-                            className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(post.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                    <TableRow key={post.id} className="group">
+                      <TableCell>
+                        <div className="font-semibold">{post.title}</div>
+                        <div className="text-xs text-muted-foreground truncate max-w-[300px]">
+                          {post.content.substring(0, 60)}...
                         </div>
-                      </td>
-                    </motion.tr>
+                      </TableCell>
+                      <TableCell className="font-mono text-[10px] text-muted-foreground">
+                        {post.slug}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={post.status === 'published' ? 'default' : 'secondary'}
+                          className={cn(
+                            "uppercase text-[10px] font-bold tracking-wider px-2 py-0.5",
+                            post.status === 'published' ? "bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20" : ""
+                          )}
+                        >
+                          {post.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {formatDate(post.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
+                            <MoreHorizontal size={16} />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenForm(post)}>
+                              <Edit2 className="mr-2 h-4 w-4" />
+                              <span>Edit</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteClick(post.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Delete</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </AnimatePresence>
                 {posts.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center text-gray-400 dark:text-gray-500 italic">
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-40 text-center text-muted-foreground italic">
                       No posts yet. Start by creating one!
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Full Screen Form Modal */}
       <AnimatePresence>
         {isFormOpen && (
-          <div className="fixed inset-0 z-[100] bg-white dark:bg-[#0F1115] overflow-y-auto">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 z-[100] bg-background overflow-y-auto"
+          >
             <div className="max-w-5xl mx-auto p-6 md:p-12">
-              <div className="flex justify-between items-center mb-12">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                 <div className="flex items-center gap-4">
-                  <button 
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
                     onClick={() => setIsFormOpen(false)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500 dark:text-gray-400"
+                    className="rounded-full"
                   >
                     <X size={24} />
-                  </button>
-                  <h3 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  </Button>
+                  <h3 className="text-3xl font-bold tracking-tight">
                     {editingPost ? 'Edit Post' : 'New Post'}
                   </h3>
                 </div>
-                <div className="flex gap-4">
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as 'draft' | 'published' })}
-                    className="px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#161B22] rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
-                  </select>
-                  <button
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg border">
+                    <Label htmlFor="status" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</Label>
+                    <select
+                      id="status"
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'draft' | 'published' })}
+                      className="bg-transparent border-none outline-none text-sm font-bold cursor-pointer"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </div>
+                  
+                  <Button
+                    variant="outline"
                     onClick={() => setIsPreviewOpen(true)}
-                    className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-2.5 rounded-xl transition-all font-bold"
+                    className="gap-2 font-bold"
                   >
-                    <Eye size={20} />
+                    <Eye size={18} />
                     <span>Preview</span>
-                  </button>
-                  <button
+                  </Button>
+                  
+                  <Button
                     onClick={handleSubmit}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl transition-all font-bold shadow-lg shadow-blue-100 dark:shadow-none"
+                    className="gap-2 font-bold px-8"
                   >
-                    <Save size={20} />
+                    <Save size={18} />
                     <span>{editingPost ? 'Update' : 'Publish'}</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               <div className="space-y-8">
+                <div className="group relative w-full h-[300px] bg-muted rounded-3xl overflow-hidden border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-colors">
+                  {formData.featuredImage ? (
+                    <>
+                      <img 
+                        src={formData.featuredImage} 
+                        alt="Featured" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                        <Button variant="secondary" onClick={() => setFormData({ ...formData, featuredImage: '' })}>
+                          Remove
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+                      <div className="p-4 bg-background rounded-full shadow-sm">
+                        <ImageIcon size={32} />
+                      </div>
+                      <div className="text-center">
+                        <p className="font-bold">Add Featured Image</p>
+                        <p className="text-xs">Paste a URL or upload a file</p>
+                      </div>
+                      <Input 
+                        className="max-w-xs" 
+                        placeholder="Image URL..." 
+                        value={formData.featuredImage}
+                        onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <input
                   required
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full text-5xl font-black border-none outline-none placeholder:text-gray-200 dark:placeholder:text-gray-800 bg-transparent text-gray-900 dark:text-gray-100"
+                  className="w-full text-4xl md:text-6xl font-black border-none outline-none placeholder:text-muted/50 bg-transparent"
                   placeholder="Post Title"
                 />
                 
-                <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 font-mono text-sm border-b border-gray-100 dark:border-gray-800 pb-4">
-                  <span>/</span>
-                  <input
-                    required
-                    type="text"
-                    value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    className="flex-1 border-none outline-none focus:text-blue-600 dark:focus:text-blue-400 bg-transparent"
-                    placeholder="post-url-slug"
-                  />
+                <div className="flex flex-wrap items-center gap-6 text-muted-foreground border-b pb-4">
+                  <div className="flex items-center gap-2 font-mono text-sm">
+                    <span className="opacity-50">/</span>
+                    <input
+                      required
+                      type="text"
+                      value={formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                      className="border-none outline-none focus:text-primary bg-transparent"
+                      placeholder="post-url-slug"
+                    />
+                  </div>
+                  
+                  <Separator orientation="vertical" className="h-4 hidden md:block" />
+                  
+                  <div className="flex items-center gap-2">
+                    <Tag size={14} />
+                    <Input 
+                      className="h-7 text-xs border-none bg-transparent focus-visible:ring-0 p-0 w-40"
+                      placeholder="Add tags (comma separated)..."
+                      value={formData.tags.join(', ')}
+                      onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })}
+                    />
+                  </div>
                 </div>
 
                 <div className="mt-8">
@@ -316,7 +410,7 @@ export const Posts = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
