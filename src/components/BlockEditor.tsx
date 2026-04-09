@@ -12,6 +12,8 @@ import InlineCode from '@editorjs/inline-code';
 import Marker from '@editorjs/marker';
 import Underline from '@editorjs/underline';
 import Paragraph from '@editorjs/paragraph';
+import Undo from 'editorjs-undo';
+import Embed from '@editorjs/embed';
 
 interface BlockEditorProps {
   data: any;
@@ -59,6 +61,12 @@ export const BlockEditor = ({ data, onChange, placeholder }: BlockEditorProps) =
       placeholder: placeholder || 'Start writing your story...',
       data: initialData,
       logLevel: 'ERROR' as any,
+      onReady: () => {
+        if (initialData) {
+          calculateStats(initialData);
+        }
+        new Undo({ editor });
+      },
       tools: {
         paragraph: {
           class: Paragraph,
@@ -105,9 +113,45 @@ export const BlockEditor = ({ data, onChange, placeholder }: BlockEditorProps) =
         marker: Marker,
         underline: Underline,
         linkTool: LinkTool,
+        embed: {
+          class: Embed,
+          config: {
+            services: {
+              youtube: true,
+              vimeo: true,
+              twitter: true,
+              instagram: true,
+              facebook: true
+            }
+          }
+        },
         image: {
           class: ImageTool,
           config: {
+            endpoints: {
+              byFile: '/api/upload-dummy',
+              byUrl: '/api/fetch-dummy',
+            },
+            uploader: {
+              uploadByUrl(url: string) {
+                return Promise.resolve({
+                  success: 1,
+                  file: { url }
+                });
+              },
+              uploadByFile(file: File) {
+                return Promise.resolve({
+                  success: 1,
+                  file: { url: URL.createObjectURL(file) }
+                });
+              }
+            }
+          }
+        },
+        video: {
+          class: ImageTool,
+          config: {
+            buttonContent: 'Select Video',
             endpoints: {
               byFile: '/api/upload-dummy',
               byUrl: '/api/fetch-dummy',
@@ -146,11 +190,6 @@ export const BlockEditor = ({ data, onChange, placeholder }: BlockEditorProps) =
         
         onChange(savedData, plainText);
       },
-      onReady: () => {
-        if (initialData) {
-          calculateStats(initialData);
-        }
-      }
     });
 
     editorRef.current = editor;
@@ -201,6 +240,23 @@ export const BlockEditor = ({ data, onChange, placeholder }: BlockEditorProps) =
         .dark .ce-toolbar__settings-btn:hover {
           background-color: #374151;
           color: white;
+        }
+        .ce-toolbar__settings-btn {
+          background-color: #f3f4f6;
+          border: 1px solid #e5e7eb;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+          transition: all 0.2s;
+        }
+        .dark .ce-toolbar__settings-btn {
+          background-color: #1f2937;
+          border-color: #374151;
+        }
+        .ce-toolbar__settings-btn:hover {
+          transform: scale(1.1);
+          background-color: #fff;
+        }
+        .dark .ce-toolbar__settings-btn:hover {
+          background-color: #374151;
         }
         .dark .ce-popover {
           background-color: #1f2937;

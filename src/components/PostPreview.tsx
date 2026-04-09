@@ -91,6 +91,35 @@ export const PostPreview = ({ isOpen, onClose, post }: PostPreviewProps) => {
               )}
             </figure>
           );
+        case 'video':
+          return (
+            <figure key={index} className="my-8">
+              <video 
+                src={block.data.file.url} 
+                controls 
+                className="rounded-xl w-full h-auto shadow-lg"
+              />
+              {block.data.caption && (
+                <figcaption className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2 italic">{block.data.caption}</figcaption>
+              )}
+            </figure>
+          );
+        case 'embed':
+          return (
+            <div key={index} className="my-8 rounded-xl overflow-hidden shadow-lg aspect-video">
+              <iframe
+                src={block.data.embed}
+                title={block.data.caption || 'Embedded content'}
+                className="w-full h-full"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+              {block.data.caption && (
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2 italic">{block.data.caption}</p>
+              )}
+            </div>
+          );
         default:
           return null;
       }
