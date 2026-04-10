@@ -1,7 +1,8 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import { fileURLToPath } from "url";
+import fs from "fs";
+import { fileURLToPath, pathToFileURL } from "url";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import dotenv from "dotenv";
@@ -22,17 +23,115 @@ initializeApp({
   projectId: firebaseConfig.projectId,
 });
 
-const db = getFirestore();
-// Use the specific database ID if provided in the config
-const firestore = firebaseConfig.firestoreDatabaseId 
-  ? db.terminate().then(() => getFirestore(firebaseConfig.firestoreDatabaseId))
-  : db;
+const db = firebaseConfig.firestoreDatabaseId 
+  ? getFirestore(firebaseConfig.firestoreDatabaseId)
+  : getFirestore();
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
+
+  // --- Plugin System ---
+  const pluginsDir = path.join(process.cwd(), "plugins");
+
+  async function loadPlugins() {
+    console.log("Scanning for plugins...");
+    if (!fs.existsSync(pluginsDir)) {
+      fs.mkdirSync(pluginsDir);
+    }
+
+    const pluginFolders = fs.readdirSync(pluginsDir);
+    for (const folder of pluginFolders) {
+      const pluginPath = path.join(pluginsDir, folder, "index.ts");
+      if (fs.existsSync(pluginPath)) {
+        try {
+          // In this environment, we might need to use dynamic import with tsx or similar
+          // Since server.ts is run with tsx, we can import .ts files
+          const pluginModule = await import(pathToFileURL(pluginPath).href);
+          const { manifest } = pluginModule;
+
+          if (manifest) {
+            const pluginsRef = db.collection("plugins");
+            const snapshot = await pluginsRef.where("name", "==", manifest.name).get();
+
+            if (snapshot.empty) {
+              await pluginsRef.add({
+                ...manifest,
+                status: "inactive",
+                createdAt: new Date(),
+              });
+              console.log(`Registered plugin: ${manifest.name}`);
+            } else {
+              // Update existing manifest if needed
+              await snapshot.docs[0].ref.update({
+                ...manifest,
+              });
+              console.log(`Updated plugin: ${manifest.name}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to load plugin from ${folder}:`, error);
+        }
+      }
+    }
+  }
+
+  // Run loader on startup
+  await loadPlugins();
+
+  // Plugin Management Endpoints
+  app.get("/api/plugins", async (req, res) => {
+    try {
+      const snapshot = await db.collection("plugins").get();
+      const plugins = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      res.json(plugins);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/plugins/:id/activate", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await db.collection("plugins").doc(id).update({ status: "active" });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/plugins/:id/deactivate", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await db.collection("plugins").doc(id).update({ status: "inactive" });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Run plugin endpoint
+  app.post("/api/plugins/:folder/run", async (req, res) => {
+    try {
+      const { folder } = req.params;
+      const pluginPath = path.join(pluginsDir, folder, "index.ts");
+      if (!fs.existsSync(pluginPath)) {
+        return res.status(404).json({ error: "Plugin not found" });
+      }
+
+      const pluginModule = await import(pathToFileURL(pluginPath).href);
+      if (typeof pluginModule.run === "function") {
+        const result = await pluginModule.run(db, req.body);
+        res.json(result);
+      } else {
+        res.status(400).json({ error: "Plugin does not export a run function" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // --- REST API Layer ---
 

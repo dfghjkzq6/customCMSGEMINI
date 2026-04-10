@@ -95,6 +95,21 @@
         "metadata": { "type": "object", "description": "Raw data related to the action." }
       },
       "required": ["action", "entityType", "timestamp", "userEmail"]
+    },
+    "Plugin": {
+      "title": "Plugin",
+      "description": "A system plugin registration.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "collections": { "type": "array", "items": { "type": "string" } },
+        "hasPanel": { "type": "boolean" },
+        "pageRef": { "type": "string" },
+        "apiRef": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -117,6 +132,10 @@
     "/auditLogs/{logId}": {
       "schema": "AuditLog",
       "description": "History of administrative actions."
+    },
+    "/plugins/{pluginId}": {
+      "schema": "Plugin",
+      "description": "System plugins registration."
     }
   }
 }

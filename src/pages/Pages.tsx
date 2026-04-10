@@ -42,6 +42,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Page {
   id: string;
@@ -57,6 +58,8 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [pageToDelete, setPageToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [editingPage, setEditingPage] = useState<Page | null>(null);
   const [formData, setFormData] = useState<Omit<Page, 'id'>>({
     title: '',
@@ -73,8 +76,14 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
         ...doc.data()
       })) as Page[];
       setPages(data);
+      setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'pages');
+      try {
+        handleFirestoreError(error, OperationType.LIST, 'pages');
+      } catch (wrappedError: any) {
+        toast.error('Failed to load pages. Please check your permissions.');
+      }
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -103,6 +112,7 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       if (editingPage) {
         await updateDoc(doc(db, 'pages', editingPage.id), formData as any);
@@ -113,6 +123,7 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
           details: `Updated page: ${formData.title}`,
           metadata: { title: formData.title, type: formData.type }
         });
+        toast.success('Page updated successfully');
       } else {
         const docRef = await addDoc(collection(db, 'pages'), formData as any);
         await logAction({
@@ -122,10 +133,27 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
           details: `Created new page: ${formData.title}`,
           metadata: { title: formData.title, type: formData.type }
         });
+        toast.success('Page created successfully');
       }
       setIsFormOpen(false);
-    } catch (error) {
-      handleFirestoreError(error, editingPage ? OperationType.UPDATE : OperationType.CREATE, 'pages');
+    } catch (error: any) {
+      try {
+        handleFirestoreError(error, editingPage ? OperationType.UPDATE : OperationType.CREATE, 'pages');
+      } catch (wrappedError: any) {
+        try {
+          const errInfo = JSON.parse(wrappedError.message);
+          const errorMessage = errInfo.error || 'Unknown error';
+          if (errorMessage.includes('permission-denied')) {
+            toast.error('Permission denied: You do not have rights to save pages.');
+          } else {
+            toast.error(`Failed to save page: ${errorMessage}`);
+          }
+        } catch (e) {
+          toast.error('An unexpected error occurred while saving the page.');
+        }
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -145,10 +173,25 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
         entityId: pageToDelete,
         details: `Deleted page with ID: ${pageToDelete}`
       });
+      toast.success('Page deleted successfully');
       setIsDeleteModalOpen(false);
       setPageToDelete(null);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `pages/${pageToDelete}`);
+    } catch (error: any) {
+      try {
+        handleFirestoreError(error, OperationType.DELETE, `pages/${pageToDelete}`);
+      } catch (wrappedError: any) {
+        try {
+          const errInfo = JSON.parse(wrappedError.message);
+          const errorMessage = errInfo.error || 'Unknown error';
+          if (errorMessage.includes('permission-denied')) {
+            toast.error('Permission denied: You do not have rights to delete pages.');
+          } else {
+            toast.error(`Failed to delete page: ${errorMessage}`);
+          }
+        } catch (e) {
+          toast.error('An unexpected error occurred while deleting the page.');
+        }
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -168,49 +211,60 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {pages.map((page) => (
-          <Card key={page.id} className="group hover:shadow-md transition-all">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div className="bg-purple-500/10 p-2.5 rounded-lg text-purple-500">
-                <Layers size={20} />
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="h-20 bg-muted/50" />
+              <CardContent className="h-32 bg-muted/20" />
+            </Card>
+          ))
+        ) : (
+          <>
+            {pages.map((page) => (
+              <Card key={page.id} className="group hover:shadow-md transition-all">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div className="bg-purple-500/10 p-2.5 rounded-lg text-purple-500">
+                    <Layers size={20} />
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
+                      <MoreHorizontal size={16} />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleOpenForm(page)}>
+                        <Edit2 className="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteClick(page.id)}
+                        variant="destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <CardTitle className="text-xl">{page.title}</CardTitle>
+                  <CardDescription className="font-mono text-[10px] mt-1">
+                    path: /p{page.path}
+                  </CardDescription>
+                  
+                  <div className="mt-6 flex items-center gap-2">
+                    <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0">
+                      Type: {page.type}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {pages.length === 0 && (
+              <div className="col-span-full py-20 text-center text-muted-foreground italic border-2 border-dashed rounded-2xl">
+                No custom pages defined yet.
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" />}>
-                  <MoreHorizontal size={16} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleOpenForm(page)}>
-                    <Edit2 className="mr-2 h-4 w-4" />
-                    <span>Edit</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleDeleteClick(page.id)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    <span>Delete</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <CardTitle className="text-xl">{page.title}</CardTitle>
-              <CardDescription className="font-mono text-[10px] mt-1">
-                path: /p{page.path}
-              </CardDescription>
-              
-              <div className="mt-6 flex items-center gap-2">
-                <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0">
-                  Type: {page.type}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {pages.length === 0 && (
-          <div className="col-span-full py-20 text-center text-muted-foreground italic border-2 border-dashed rounded-2xl">
-            No custom pages defined yet.
-          </div>
+            )}
+          </>
         )}
       </div>
 
@@ -325,11 +379,14 @@ export const Pages = ({ models, connections }: { models: any[], connections: any
             </div>
 
             <DialogFooter className="p-6 border-t bg-background sticky bottom-0 z-10 shrink-0 sm:flex-row flex-col gap-2">
-              <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)} className="w-full sm:w-auto">
+              <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)} className="w-full sm:w-auto" disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" className="font-bold px-8 w-full sm:w-auto">
-                {editingPage ? 'Update' : 'Create'}
+              <Button type="submit" className="font-bold px-8 w-full sm:w-auto" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                ) : null}
+                {isSubmitting ? 'Saving...' : (editingPage ? 'Update' : 'Create')}
               </Button>
             </DialogFooter>
           </form>

@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Field {
   key: string;
@@ -154,6 +155,7 @@ export const DataModels = () => {
           details: `Updated data model: ${formData.name}`,
           metadata: { name: formData.name, collectionName: formData.collectionName }
         });
+        toast.success('Data model updated successfully');
       } else {
         const docRef = await addDoc(collection(db, 'dataModels'), formData as any);
         await logAction({
@@ -163,10 +165,15 @@ export const DataModels = () => {
           details: `Created new data model: ${formData.name}`,
           metadata: { name: formData.name, collectionName: formData.collectionName }
         });
+        toast.success('Data model created successfully');
       }
       setIsFormOpen(false);
-    } catch (error) {
-      handleFirestoreError(error, editingModel ? OperationType.UPDATE : OperationType.CREATE, 'dataModels');
+    } catch (error: any) {
+      try {
+        handleFirestoreError(error, editingModel ? OperationType.UPDATE : OperationType.CREATE, 'dataModels');
+      } catch (wrappedError: any) {
+        toast.error('Failed to save data model. Please check your permissions.');
+      }
     }
   };
 
@@ -186,10 +193,15 @@ export const DataModels = () => {
         entityId: modelToDelete,
         details: `Deleted data model with ID: ${modelToDelete}`
       });
+      toast.success('Data model deleted successfully');
       setIsDeleteModalOpen(false);
       setModelToDelete(null);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `dataModels/${modelToDelete}`);
+    } catch (error: any) {
+      try {
+        handleFirestoreError(error, OperationType.DELETE, `dataModels/${modelToDelete}`);
+      } catch (wrappedError: any) {
+        toast.error('Failed to delete data model. Please check your permissions.');
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -216,7 +228,7 @@ export const DataModels = () => {
                 <Database size={20} />
               </div>
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" />}>
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
                   <MoreHorizontal size={16} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

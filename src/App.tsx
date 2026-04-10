@@ -14,6 +14,7 @@ import { Pages } from './pages/Pages';
 import { DynamicCRUD } from './pages/DynamicCRUD';
 import { AuditLogs } from './pages/AuditLogs';
 import { APIConsole } from './pages/APIConsole';
+import { Plugins } from './pages/Plugins';
 import { StaticPage } from './pages/StaticPage';
 import { APIDocs } from './pages/APIDocs';
 import { ThemeProvider } from './context/ThemeContext';
@@ -69,6 +70,7 @@ function AdminApp() {
           <Route path="/connections" element={<APIConnections />} />
           <Route path="/audit" element={<AuditLogs />} />
           <Route path="/pages" element={<Pages models={models} connections={connections} />} />
+          <Route path="/plugins" element={<Plugins />} />
           <Route path="/docs" element={<APIDocs models={models} />} />
 
           {/* Dynamic CRUD Routes */}

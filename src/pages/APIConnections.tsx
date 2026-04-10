@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface APIConnection {
   id: string;
@@ -115,6 +116,7 @@ export const APIConnections = () => {
           details: `Updated API connection: ${formData.name}`,
           metadata: { name: formData.name, baseUrl: formData.baseUrl }
         });
+        toast.success('API connection updated successfully');
       } else {
         const docRef = await addDoc(collection(db, 'apiConnections'), formData as any);
         await logAction({
@@ -124,10 +126,15 @@ export const APIConnections = () => {
           details: `Created new API connection: ${formData.name}`,
           metadata: { name: formData.name, baseUrl: formData.baseUrl }
         });
+        toast.success('API connection created successfully');
       }
       setIsFormOpen(false);
-    } catch (error) {
-      handleFirestoreError(error, editingConn ? OperationType.UPDATE : OperationType.CREATE, 'apiConnections');
+    } catch (error: any) {
+      try {
+        handleFirestoreError(error, editingConn ? OperationType.UPDATE : OperationType.CREATE, 'apiConnections');
+      } catch (wrappedError: any) {
+        toast.error('Failed to save API connection. Please check your permissions.');
+      }
     }
   };
 
@@ -147,10 +154,15 @@ export const APIConnections = () => {
         entityId: connToDelete,
         details: `Deleted API connection with ID: ${connToDelete}`
       });
+      toast.success('API connection deleted successfully');
       setIsDeleteModalOpen(false);
       setConnToDelete(null);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `apiConnections/${connToDelete}`);
+    } catch (error: any) {
+      try {
+        handleFirestoreError(error, OperationType.DELETE, `apiConnections/${connToDelete}`);
+      } catch (wrappedError: any) {
+        toast.error('Failed to delete API connection. Please check your permissions.');
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -177,7 +189,7 @@ export const APIConnections = () => {
                 <Globe size={20} />
               </div>
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" />}>
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
                   <MoreHorizontal size={16} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

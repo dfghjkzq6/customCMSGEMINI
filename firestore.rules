@@ -65,6 +65,10 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /plugins/{pluginId} {
+      allow read, write: if true;
+    }
+
     // Allow dynamic collections defined by dataModels
     match /{collectionName}/{docId} {
       allow read, write: if true;

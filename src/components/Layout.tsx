@@ -23,7 +23,8 @@ import {
   LogOut,
   User,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  Puzzle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../context/ThemeContext';
@@ -93,6 +94,7 @@ export const Layout = ({ children, customPages = [] }: { children: React.ReactNo
     { to: "/connections", icon: <Globe size={18} />, label: "API Connections" },
     { to: "/audit", icon: <History size={18} />, label: "Audit Log" },
     { to: "/pages", icon: <Layers size={18} />, label: "Pages" },
+    { to: "/plugins", icon: <Puzzle size={18} />, label: "Plugins" },
     { to: "/docs", icon: <BookOpen size={18} />, label: "API Docs" },
   ];
 
